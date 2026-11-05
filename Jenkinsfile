@@ -117,45 +117,23 @@ pipeline {
 
                         ssh -o StrictHostKeyChecking=accept-new \
                         ${EC2_USER}@${EC2_HOST} \
-                        "AWS_REGION=${AWS_REGION} \
-                        ECR_REGISTRY=${ECR_REGISTRY} \
-                        IMAGE_TAG=${BUILD_NUMBER} \
-                        USER_REPO=${USER_IMAGE} \
-                        PRODUCT_REPO=${PRODUCT_IMAGE} \
-                        ORDER_REPO=${ORDER_IMAGE} \
-                        DEPLOY_DIR=${DEPLOY_DIR} \
-                        bash -s" <<'REMOTE'
-
-                        set -e
-
-                        cd "$DEPLOY_DIR"
-
-                        echo "Logging in to ECR..."
-
-                        aws ecr get-login-password --region "$AWS_REGION" | \
-                        docker login --username AWS --password-stdin "$ECR_REGISTRY"
-
-                        export USER_IMAGE="$ECR_REGISTRY/$USER_REPO:$IMAGE_TAG"
-                        export PRODUCT_IMAGE="$ECR_REGISTRY/$PRODUCT_REPO:$IMAGE_TAG"
-                        export ORDER_IMAGE="$ECR_REGISTRY/$ORDER_REPO:$IMAGE_TAG"
-
-                        echo "Validating Docker Compose..."
-
-                        docker compose config -q
-
-                        echo "Pulling images from ECR..."
-
-                        docker compose pull
-
-                        echo "Starting microservices..."
-
-                        docker compose up -d
-
-                        echo "Deployment status..."
-
-                        docker compose ps
-
-                        REMOTE
+                        "export AWS_REGION=${AWS_REGION}; \
+                        export ECR_REGISTRY=${ECR_REGISTRY}; \
+                        export IMAGE_TAG=${BUILD_NUMBER}; \
+                        export USER_REPO=${USER_IMAGE}; \
+                        export PRODUCT_REPO=${PRODUCT_IMAGE}; \
+                        export ORDER_REPO=${ORDER_IMAGE}; \
+                        export DEPLOY_DIR=${DEPLOY_DIR}; \
+                        cd ${DEPLOY_DIR} && \
+                        aws ecr get-login-password --region ${AWS_REGION} | \
+                        docker login --username AWS --password-stdin ${ECR_REGISTRY} && \
+                        export USER_IMAGE=${ECR_REGISTRY}/${USER_IMAGE}:${BUILD_NUMBER} && \
+                        export PRODUCT_IMAGE=${ECR_REGISTRY}/${PRODUCT_IMAGE}:${BUILD_NUMBER} && \
+                        export ORDER_IMAGE=${ECR_REGISTRY}/${ORDER_IMAGE}:${BUILD_NUMBER} && \
+                        docker compose config -q && \
+                        docker compose pull && \
+                        docker compose up -d && \
+                        docker compose ps"
                     '''
                 }
             }
